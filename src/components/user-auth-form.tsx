@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { auth } from "@/lib/firebase";
-import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, GithubAuthProvider, createUserWithEmailAndPassword } from "firebase/auth";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,16 +20,43 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
       await signInWithEmailAndPassword(auth, email, password);
       onSuccess();
     } catch (error) {
+      setError("Error signing in: " + (error as any).message);
       console.error("Error signing in:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      onSuccess();
+    } catch (error) {
+      setError("Error signing up: " + (error as any).message);
+      console.error("Error signing up:", error);
     } finally {
       setIsLoading(false);
     }
@@ -43,6 +70,7 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
       await signInWithPopup(auth, provider);
       onSuccess();
     } catch (error) {
+      setError("Error signing in with Google: " + (error as any).message);
       console.error("Error signing in with Google:", error);
     } finally {
       setIsLoading(false);
@@ -57,6 +85,7 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
       await signInWithPopup(auth, provider);
       onSuccess();
     } catch (error) {
+      setError("Error signing in with GitHub: " + (error as any).message);
       console.error("Error signing in with GitHub:", error);
     } finally {
       setIsLoading(false);
@@ -78,7 +107,7 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
           </TabsList>
 
           <TabsContent value="email">
-            <form onSubmit={handleSubmit} className="space-y-4 py-2">
+            <form onSubmit={isSignUp ? handleSignUp : handleSubmit} className="space-y-4 py-2">
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -102,13 +131,29 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
                   required
                 />
               </div>
+              {isSignUp && (
+                <div className="space-y-2">
+                  <Label htmlFor="confirm-password">Confirm Password</Label>
+                  <Input
+                    id="confirm-password"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+              )}
+              {error && <div className="text-red-500 text-sm">{error}</div>}
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+                {isLoading ? (isSignUp ? "Signing up..." : "Signing in...") : (isSignUp ? "Sign Up" : "Sign In")}
               </Button>
             </form>
             <div className="mt-4 text-center text-sm">
-              <span className="text-muted-foreground">Don't have an account? </span>
-              <span className="underline cursor-pointer">Sign up</span>
+              <span className="text-muted-foreground">{isSignUp ? "Already have an account?" : "Don't have an account?"} </span>
+              <span className="underline cursor-pointer" onClick={() => setIsSignUp(!isSignUp)}>
+                {isSignUp ? "Sign in" : "Sign up"}
+              </span>
             </div>
           </TabsContent>
 
