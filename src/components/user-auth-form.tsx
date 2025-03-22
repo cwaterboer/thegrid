@@ -1,63 +1,67 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Github, Mail } from "lucide-react"
+import { useState } from "react";
+import { auth } from "@/lib/firebase";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, GithubAuthProvider } from "firebase/auth";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Github, Mail } from "lucide-react";
 
 interface UserAuthFormProps {
-  isOpen: boolean
-  onClose: () => void
-  onSuccess: () => void
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
 }
 
 export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) {
-  const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+    e.preventDefault();
+    setIsLoading(true);
 
-    // Simulate authentication
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    onSuccess()
-  }
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      onSuccess();
+    } catch (error) {
+      console.error("Error signing in:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGoogleSignIn = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
+    const provider = new GoogleAuthProvider();
 
-    // Simulate authentication
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    onSuccess()
-  }
+    try {
+      await signInWithPopup(auth, provider);
+      onSuccess();
+    } catch (error) {
+      console.error("Error signing in with Google:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleGithubSignIn = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
+    const provider = new GithubAuthProvider();
 
-    // Simulate authentication
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    setIsLoading(false)
-    onSuccess()
-  }
+    try {
+      await signInWithPopup(auth, provider);
+      onSuccess();
+    } catch (error) {
+      console.error("Error signing in with GitHub:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -132,6 +136,5 @@ export function UserAuthForm({ isOpen, onClose, onSuccess }: UserAuthFormProps) 
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
+  );
 }
-
